@@ -44,18 +44,18 @@ def main():
     - **Transform responses** based on personality style + user memory
     - **Personalize interactions** using extracted insights
     """)
-    
+
     # Sidebar for controls
     with st.sidebar:
         st.header("⚙️ Controls")
-        
+
         # API Key input
         # Check if running on Streamlit Cloud (secrets available)
         try:
             api_key_from_secrets = st.secrets.get("OPENAI_API_KEY", "")
         except:
             api_key_from_secrets = ""
-        
+
         if api_key_from_secrets:
             st.success("✅ API key loaded from Secrets (Streamlit Cloud)")
             api_key = api_key_from_secrets
@@ -66,14 +66,13 @@ def main():
                 help="Enter your OpenAI API key. For Streamlit Cloud, configure in Secrets.",
                 value=""
             )
-        
+
         if not api_key:
             st.warning("⚠️ Please enter your OpenAI API key to use this app.")
-            st.info("💡 On Streamlit Cloud: Add your key in App Settings → Secrets")
             st.stop()
-        
+
         st.divider()
-        
+
         # Personality selector
         st.subheader("🎭 Personality Style")
         personality_options = {
@@ -82,17 +81,17 @@ def main():
             "witty_friend": "Witty Friend",
             "therapist_style": "Therapist-Style"
         }
-        
+
         selected_personality = st.selectbox(
             "Choose personality for transformed responses:",
             options=list(personality_options.keys()),
             format_func=lambda x: personality_options[x]
         )
-        
+
         st.info(f"Selected: **{personality_options[selected_personality]}**")
-        
+
         st.divider()
-        
+
         # Memory extraction button
         st.subheader("📊 Memory Extraction")
         if st.button("🔍 Extract Memory from Chats", type="primary", use_container_width=True):
@@ -100,23 +99,26 @@ def main():
                 with st.spinner("Analyzing chat history and extracting memory..."):
                     try:
                         extractor = MemoryExtractor(api_key=api_key)
-                        st.session_state.memory = extractor.extract_memory(st.session_state.chat_messages)
+                        st.session_state.memory = extractor.extract_memory(
+                            st.session_state.chat_messages)
                         st.success("✅ Memory extracted successfully!")
                     except Exception as e:
                         st.error(f"Error extracting memory: {str(e)}")
             else:
                 st.warning("Please add chat messages first!")
-    
+
     # Main content area
-    tab1, tab2, tab3, tab4 = st.tabs(["📝 Chat Input", "💾 Memory Display", "🔄 Before/After Demo", "💬 Live Companion Mode"])
-    
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["📝 Chat Input", "💾 Memory Display", "🔄 Before/After Demo", "💬 Live Companion Mode"])
+
     # Tab 1: Chat Input
     with tab1:
         st.header("Enter Chat Messages")
-        st.markdown("Add 30 chat messages (or use sample data) to extract memory from.")
-        
+        st.markdown(
+            "Add 30 chat messages (or use sample data) to extract memory from.")
+
         col1, col2 = st.columns([3, 1])
-        
+
         with col1:
             # Load sample chats
             sample_chats = load_sample_chats()
@@ -124,13 +126,13 @@ def main():
                 if st.button("📥 Load Sample Chats (30 messages)", use_container_width=True):
                     st.session_state.chat_messages = sample_chats
                     st.rerun()
-        
+
         with col2:
             if st.button("🗑️ Clear Messages", use_container_width=True):
                 st.session_state.chat_messages = []
                 st.session_state.memory = None
                 st.rerun()
-        
+
         # Text area for chat messages
         chat_input = st.text_area(
             "Chat Messages (one per line, or paste multiple):",
@@ -138,25 +140,27 @@ def main():
             height=300,
             help="Enter chat messages, one per line. These will be analyzed for memory extraction."
         )
-        
+
         if st.button("💾 Save Messages", type="primary"):
-            messages = [msg.strip() for msg in chat_input.split("\n") if msg.strip()]
+            messages = [msg.strip()
+                        for msg in chat_input.split("\n") if msg.strip()]
             st.session_state.chat_messages = messages
             st.success(f"✅ Saved {len(messages)} messages!")
             st.rerun()
-        
+
         if st.session_state.chat_messages:
-            st.info(f"📊 Currently loaded: **{len(st.session_state.chat_messages)}** messages")
-    
+            st.info(
+                f"📊 Currently loaded: **{len(st.session_state.chat_messages)}** messages")
+
     # Tab 2: Memory Display
     with tab2:
         st.header("Extracted Memory")
-        
+
         if st.session_state.memory:
             memory = st.session_state.memory
-            
+
             col1, col2, col3 = st.columns(3)
-            
+
             with col1:
                 st.subheader("🎯 Preferences")
                 if memory.get("preferences"):
@@ -164,14 +168,14 @@ def main():
                         st.markdown(f"- {pref}")
                 else:
                     st.info("No preferences extracted yet.")
-            
+
             with col2:
                 st.subheader("😊 Emotional Patterns")
                 if memory.get("emotional_patterns"):
                     st.markdown(memory["emotional_patterns"])
                 else:
                     st.info("No emotional patterns detected.")
-            
+
             with col3:
                 st.subheader("📌 Key Facts")
                 if memory.get("facts"):
@@ -179,15 +183,16 @@ def main():
                         st.markdown(f"- {fact}")
                 else:
                     st.info("No facts extracted yet.")
-            
+
             st.divider()
-            
+
             # Raw JSON view
             with st.expander("🔍 View Raw JSON"):
                 st.json(memory)
         else:
-            st.info("👆 Go to 'Chat Input' tab, add messages, and click 'Extract Memory' in the sidebar.")
-    
+            st.info(
+                "👆 Go to 'Chat Input' tab, add messages, and click 'Extract Memory' in the sidebar.")
+
     # Tab 3: Before/After Demo
     with tab3:
         st.header("Before/After Personality Comparison")
@@ -196,43 +201,47 @@ def main():
         - **Before**: Standard neutral AI response
         - **After**: Personality-transformed response (using memory if available)
         """)
-        
+
         # User question input
         user_question = st.text_input(
             "Ask a question:",
             placeholder="e.g., How do I fix this bug?",
             help="Enter a question to see the before/after comparison"
         )
-        
+
         if user_question:
             if not api_key:
                 st.error("Please enter your OpenAI API key in the sidebar.")
             else:
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.subheader("🤖 Standard AI Response")
                     with st.spinner("Generating standard response..."):
                         try:
                             engine = PersonalityEngine(api_key=api_key)
-                            standard_response = engine.get_standard_response(user_question, api_key)
+                            standard_response = engine.get_standard_response(
+                                user_question, api_key)
                             st.markdown(standard_response)
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
-                
+
                 with col2:
                     personality_name = PersonalityEngine.PERSONALITIES[selected_personality]["name"]
                     st.subheader(f"🎭 {personality_name} Response")
-                    
+
                     if st.session_state.memory:
-                        st.caption("✨ Using extracted memory for personalization")
+                        st.caption(
+                            "✨ Using extracted memory for personalization")
                     else:
-                        st.caption("⚠️ No memory extracted yet (using personality only)")
-                    
+                        st.caption(
+                            "⚠️ No memory extracted yet (using personality only)")
+
                     with st.spinner(f"Transforming to {personality_name} style..."):
                         try:
                             engine = PersonalityEngine(api_key=api_key)
-                            standard_response = engine.get_standard_response(user_question, api_key)
+                            standard_response = engine.get_standard_response(
+                                user_question, api_key)
                             transformed_response = engine.transform_response(
                                 user_question=user_question,
                                 standard_response=standard_response,
@@ -242,42 +251,45 @@ def main():
                             st.markdown(transformed_response)
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
-                
+
                 # Show memory context if available
                 if st.session_state.memory:
                     with st.expander("📋 Memory Context Used"):
                         st.json(st.session_state.memory)
         else:
             st.info("👆 Enter a question above to see the before/after comparison.")
-    
+
     # Tab 4: Live Companion Mode
     with tab4:
         st.header("💬 Talk to your Companion")
-        st.caption(f"Current Personality: **{personality_options[selected_personality]}**")
-        
+        st.caption(
+            f"Current Personality: **{personality_options[selected_personality]}**")
+
         if st.session_state.memory:
             st.success("✨ Memory loaded - responses will be personalized!")
         else:
-            st.info("💡 Tip: Extract memory first (Tab 1 → Sidebar) for personalized responses")
-        
+            st.info(
+                "💡 Tip: Extract memory first (Tab 1 → Sidebar) for personalized responses")
+
         st.divider()
-        
+
         # Initialize chat history for this tab if not present
         if "live_chat_history" not in st.session_state:
             st.session_state.live_chat_history = []
-        
+
         # Display chat history
         for msg in st.session_state.live_chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
-        
+
         # Chat input
         if prompt := st.chat_input("Say something..."):
             # 1. Add user message
-            st.session_state.live_chat_history.append({"role": "user", "content": prompt})
+            st.session_state.live_chat_history.append(
+                {"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
-            
+
             # 2. Generate Response
             with st.chat_message("assistant"):
                 if not api_key:
@@ -288,7 +300,8 @@ def main():
                         try:
                             engine = PersonalityEngine(api_key=api_key)
                             # Get standard response first (internal thought)
-                            std_response = engine.get_standard_response(prompt, api_key)
+                            std_response = engine.get_standard_response(
+                                prompt, api_key)
                             # Transform it with personality and memory
                             final_response = engine.transform_response(
                                 user_question=prompt,
@@ -300,17 +313,18 @@ def main():
                         except Exception as e:
                             final_response = f"Error: {str(e)}"
                             st.error(final_response)
-            
+
             # 3. Save assistant response
-            st.session_state.live_chat_history.append({"role": "assistant", "content": final_response})
+            st.session_state.live_chat_history.append(
+                {"role": "assistant", "content": final_response})
             st.rerun()
-        
+
         # Clear chat button
         if st.session_state.live_chat_history:
             if st.button("🗑️ Clear Chat History", use_container_width=True):
                 st.session_state.live_chat_history = []
                 st.rerun()
-    
+
     # Footer
     st.divider()
     st.markdown("""
@@ -327,13 +341,9 @@ def main():
        - Maintaining factual accuracy while changing style
     
     3. **Structured Output**: All memory is extracted as clean JSON for easy use
-    
-    ### 🚀 Deployment
-    - **GitHub**: [Your repo link]
-    - **Streamlit Cloud**: [Your hosted link]
+
     """)
 
 
 if __name__ == "__main__":
     main()
-

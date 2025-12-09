@@ -113,10 +113,10 @@ Return your analysis as a JSON object with exactly these keys:
             return memory
             
         except Exception as e:
-            # Fallback if parsing fails
+            # Fallback if parsing fails - return neutral defaults
             return {
                 "preferences": [],
-                "emotional_patterns": f"Error during extraction: {str(e)}",
+                "emotional_patterns": "Neutral (Extraction failed, using default)",
                 "facts": []
             }
     

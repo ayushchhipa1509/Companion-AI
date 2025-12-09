@@ -108,7 +108,7 @@ def main():
                 st.warning("Please add chat messages first!")
     
     # Main content area
-    tab1, tab2, tab3 = st.tabs(["📝 Chat Input", "💾 Memory Display", "🔄 Before/After Demo"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📝 Chat Input", "💾 Memory Display", "🔄 Before/After Demo", "💬 Live Companion Mode"])
     
     # Tab 1: Chat Input
     with tab1:
@@ -249,6 +249,67 @@ def main():
                         st.json(st.session_state.memory)
         else:
             st.info("👆 Enter a question above to see the before/after comparison.")
+    
+    # Tab 4: Live Companion Mode
+    with tab4:
+        st.header("💬 Talk to your Companion")
+        st.caption(f"Current Personality: **{personality_options[selected_personality]}**")
+        
+        if st.session_state.memory:
+            st.success("✨ Memory loaded - responses will be personalized!")
+        else:
+            st.info("💡 Tip: Extract memory first (Tab 1 → Sidebar) for personalized responses")
+        
+        st.divider()
+        
+        # Initialize chat history for this tab if not present
+        if "live_chat_history" not in st.session_state:
+            st.session_state.live_chat_history = []
+        
+        # Display chat history
+        for msg in st.session_state.live_chat_history:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+        
+        # Chat input
+        if prompt := st.chat_input("Say something..."):
+            # 1. Add user message
+            st.session_state.live_chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            
+            # 2. Generate Response
+            with st.chat_message("assistant"):
+                if not api_key:
+                    st.error("Please set your API Key in the sidebar!")
+                    final_response = "API key required."
+                else:
+                    with st.spinner("Thinking..."):
+                        try:
+                            engine = PersonalityEngine(api_key=api_key)
+                            # Get standard response first (internal thought)
+                            std_response = engine.get_standard_response(prompt, api_key)
+                            # Transform it with personality and memory
+                            final_response = engine.transform_response(
+                                user_question=prompt,
+                                standard_response=std_response,
+                                personality=selected_personality,
+                                memory=st.session_state.memory
+                            )
+                            st.markdown(final_response)
+                        except Exception as e:
+                            final_response = f"Error: {str(e)}"
+                            st.error(final_response)
+            
+            # 3. Save assistant response
+            st.session_state.live_chat_history.append({"role": "assistant", "content": final_response})
+            st.rerun()
+        
+        # Clear chat button
+        if st.session_state.live_chat_history:
+            if st.button("🗑️ Clear Chat History", use_container_width=True):
+                st.session_state.live_chat_history = []
+                st.rerun()
     
     # Footer
     st.divider()
